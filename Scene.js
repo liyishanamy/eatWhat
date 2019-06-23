@@ -17,23 +17,38 @@ import {
     View,
     AsyncStorage,
     TouchableOpacity,
-    Alert, Picker
+    Alert, Picker, Linking
 } from 'react-native';
 import {Actions} from 'react-native-router-flux';
 import openMap from 'react-native-open-maps';
 import GeolocationExample from './learnGeo.js'
 import Transportation from './transportation.js';
+import {OpenMapDirections} from 'react-native-navigation-directions';
+import AmyIsAPig from "./amyIsAPig";
+import Icon from 'react-native-vector-icons/FontAwesome';
+
+
 
 class Scene extends Component {
 
     constructor(props) {
         super(props);
-        this.state = {data: '',
+        this.state = {
+            data: '',
             latitude: null,
             longitude: null,
             error: null,
             transport: 'driving',
-            isLoading: true};
+            isLoading: true
+           };
+    }
+
+    getLatitudeValue(){
+        return this.state.latitude
+    }
+
+    getLongitudeValue(){
+        return this.state.longitude
     }
 
 
@@ -42,7 +57,34 @@ class Scene extends Component {
         openMap({latitude: 37.865101, longitude: -119.538330});
     }
 
-    componentDidMount() {
+    callShowDirections = () => {
+        const startPoint = {
+            longitude: this.state.longitude,
+            latitude: this.state.latitude
+        }
+
+        const endPoint = {
+            longitude: -8.9454275,
+            latitude: 38.5722429
+        }
+
+        let transportPlan = '';
+
+        if(this.state.transport =='driving'){
+            transportPlan = 'd';
+        } else if(this.state.transport =='walking'){
+            transportPlan = 'w';
+        } else if(this.state.transport == 'publicTransit'){
+            transportPlan = 'r';
+        }
+
+
+        OpenMapDirections(startPoint, endPoint, transportPlan).then(res => {
+            console.log(res)
+        });
+    }
+
+       componentDidMount() {
         navigator.geolocation.getCurrentPosition(
             (position) => {
                 this.setState({
@@ -66,6 +108,34 @@ class Scene extends Component {
         alert(way);
         this.setState({transport: way})
     };
+
+    async componentDidMount() {
+
+
+
+        this.getLongLat = navigator.geolocation.watchPosition(
+            (position) => {
+                this.setState({
+                    latitude: position.coords.latitude,
+                    longitude: position.coords.longitude,
+                    error: null,
+                });
+            },
+            (error) => this.setState({ error: error.message }),
+            { enableHighAccuracy: true, timeout: 2000, maximumAge: 100, distanceFilter: 10 },
+        );
+
+    }
+
+    componentWillUnmount() {
+
+        navigator.geolocation.clearWatch(this.getLongLat);
+
+    }
+
+
+
+
 
 
 
@@ -93,9 +163,13 @@ class Scene extends Component {
 
         const store = () => {
             let obj = {
-                transport:`${this.state.transport}`
+                transport:`${this.state.transport}`,
             };
-            AsyncStorage.setItem('transport', JSON.stringify(obj))
+            let obj1 = {
+                isLoading: false
+            };
+            AsyncStorage.setItem('transport', JSON.stringify(obj));
+            AsyncStorage.setItem('isLoading',JSON.stringify(obj1));
         };
         const displaySavedData = async () => {
             try {
@@ -115,12 +189,34 @@ class Scene extends Component {
         const helper = () => {
             refresh();
             store();
+            //Actions.about();
+        }
+
+        const goToAvailablePlaces = () => {
+
+            Actions.about({transport:this.state.transport, latitude:this.state.latitude,longitude:this.state.longitude});
+
+        }
+
+        const goToTransport = () => {
+            Actions.transport()
         };
+
 
         return (
             <View>
-                <Transportation callBack={this.updateTransport}/>
+                <Icon name="rocket" size={80} color="#bf1313" />
 
+
+
+
+
+
+
+                {this.state.isLoading ? <Transportation callBack={this.updateTransport}/> : <TouchableOpacity onPress={goToTransport}>
+                        <Text>Change Transport</Text>
+                    </TouchableOpacity>
+                }
 
 
                 <Text style={styles.welcome}>
@@ -138,16 +234,22 @@ class Scene extends Component {
 
                 <Button
                     color={'#bdc3c7'}
-                    onPress={this._goToYosemite}
-                    title="Click To Open Maps 🗺"/>
+                    onPress={()=>{ Linking.openURL('http://maps.apple.com/?daddr='+ `${this.state.data.location}` +'&dirflg=' + `${this.state.transport}` + '&t=h')}} title="Let's Go!! 🗺"/>
 
                 <Button
                     color={'#bdc3c7'}
                     onPress={displaySavedData}
                     title="display data"/>
+                <Button
+                    color={'#bdc3c7'}
+                    onPress={goToAvailablePlaces}
+                    title="VIEW WHAT'S AVAILABLE NEARBY"/>
+
+
 
 
             </View>
+
 
 
         );

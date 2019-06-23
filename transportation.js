@@ -10,15 +10,13 @@ import React, {Component} from 'react';
 import {FlatList, Platform, StyleSheet, Text, View, AsyncStorage, TouchableOpacity, Alert, Picker} from 'react-native';
 import Routes from "./Routes";
 
-
-
-
 class Transportation extends Component {
 
     constructor (props) {
         super (props);
         this.state = {
-            transport: 'driving'
+            transport: 'driving',
+            isLoading: true
         }
     }
 
@@ -33,7 +31,7 @@ class Transportation extends Component {
             <View>
                 <Picker selectedValue={this.state.transport} onValueChange={this.updateTransport}>
                     <Picker.Item label="driving 🚗" value="driving"/>
-                    <Picker.Item label="cycling 🚴‍" value="cycling"/>
+                    <Picker.Item label="public transit 🚴‍" value="publicTransit"/>
                     <Picker.Item label="walking 🚶‍" value="walking"/>
                 </Picker>
             </View>
